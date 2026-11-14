@@ -769,6 +769,10 @@ def build_dependency(base: Path, dependency: Dependency, build_target: BuildTarg
         build_env = {**build_env, "LDFLAGS": f"{build_env['LDFLAGS']} -L{prefix / 'lib'} {CXX_RUNTIME[build_target.build_os]} {' '.join(link)}".strip()}
     if dependency.name == "ffmpeg":
         build_ffmpeg(src, build_target, prefix, flags, build_env)
+    elif dependency.name == "libplacebo" and build_variant == BuildVariant.VIDEO:
+        # Meson finds libraries only in its search dirs, not the prefix link
+        # path; point its glslang lookup (static libs, no pkg-config) there.
+        build_meson(src, prefix, cross_file, native_file, [*flags, f"-Dvulkan-sdk={prefix}"], build_env)
     elif dependency.tool == BuildTool.PREBUILT:
         build_prebuilt(base, dependency, src, build_target, prefix)
     elif dependency.tool == BuildTool.MESON:
