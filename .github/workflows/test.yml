@@ -54,7 +54,7 @@ jobs:
           mkdir -p staged/linux artifacts/linux
           gh run download "${{ needs.setup.outputs.run-id }}" --repo "$GITHUB_REPOSITORY" --name "libmpv-linux-x86_64-video" --dir artifacts/linux
           unzip -o -q artifacts/linux/libmpv_linux_x86_64_video.zip -d staged/linux
-          cp staged/linux/lib/libmpv.so* tests/flutter/mpv_libs/linux/native/
+          cp staged/linux/lib/libmpv.so* staged/linux/lib/libvulkan.so* tests/flutter/mpv_libs/linux/native/
       - name: Verify mimalloc
         run: |
           nm -D staged/linux/lib/libmpv.so | grep -q " T malloc"

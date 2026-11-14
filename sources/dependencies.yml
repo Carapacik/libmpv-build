@@ -20,6 +20,7 @@
     - dav1d
     - libxml2
     - mbedtls
+    - vulkan-loader
     - zlib
 - name: freetype
   version: 2.15.0
@@ -36,6 +37,14 @@
   tool: meson
   dependencies: []
   variants: [video]
+- name: glslang
+  version: 1.4.363.0
+  url: https://github.com/KhronosGroup/glslang/archive/refs/tags/vulkan-sdk-1.4.363.0.tar.gz
+  sha256: cda24ec765e6d2845d106b7caa593f34127195a88524cf87821ff0088fb6edec
+  tool: cmake
+  dependencies: []
+  os: [linux, windows]
+  variants: [video]
 - name: harfbuzz
   version: 15.1.0
   url: https://github.com/harfbuzz/harfbuzz/releases/download/15.1.0/harfbuzz-15.1.0.tar.xz
@@ -43,6 +52,22 @@
   tool: meson
   dependencies:
     - freetype
+  variants: [video]
+- name: libdisplay-info
+  version: 0.4.0
+  url: https://gitlab.freedesktop.org/emersion/libdisplay-info/-/archive/0.4.0/libdisplay-info-0.4.0.tar.gz
+  sha256: 787b58aec473830b0030251ba2b880560b4b3853dc5d6961a6e9701abae29b55
+  tool: meson
+  dependencies: []
+  os: [linux]
+  variants: [video]
+- name: libdrm
+  version: 2.4.134
+  url: https://gitlab.freedesktop.org/mesa/drm/-/archive/libdrm-2.4.134/drm-libdrm-2.4.134.tar.bz2
+  sha256: be216ba675f172e8e7cf908c7da85e3d76cb84ae1cb98e4c7e6089e487a2ec99
+  tool: meson
+  dependencies: []
+  os: [linux]
   variants: [video]
 - name: libass
   version: 0.17.5
@@ -61,7 +86,9 @@
   tool: meson
   dependencies:
     - fast-float
+    - glslang
     - vulkan-headers
+    - vulkan-loader
 - name: libxml2
   version: 2.15.4
   url: https://download.gnome.org/sources/libxml2/2.15/libxml2-2.15.4.tar.xz
@@ -90,7 +117,10 @@
   dependencies:
     - ffmpeg
     - libass
+    - libdisplay-info
+    - libdrm
     - libplacebo
+    - vulkan-loader
     - zlib
 - name: vulkan-headers
   version: 1.4.368
@@ -98,6 +128,15 @@
   sha256: 5c5c6f64fcce28a24cc934143a048707af036a858e4ed11d7f71fe016006ecda
   tool: cmake
   dependencies: []
+- name: vulkan-loader
+  version: 1.4.363.0
+  url: https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/vulkan-sdk-1.4.363.0.tar.gz
+  sha256: 941eff558fc74f248745fb7df367640cf89a8457f216dae498a74ae3eb6a8457f
+  tool: cmake
+  dependencies:
+    - vulkan-headers
+  os: [linux, windows]
+  variants: [video]
 - name: zlib
   version: 1.3.1
   url: https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz

@@ -879,10 +879,12 @@ def build_cmake(src: Path, build_target: BuildTarget, prefix: Path, args: list[s
             "-DCMAKE_SYSTEM_NAME=Windows",
             f"-DCMAKE_SYSTEM_PROCESSOR={processor}",
         ]
+    # Lets vendored cmake packages find each other (e.g. the vulkan loader
+    # needs the Vulkan-Headers config); harmless for self-contained deps.
     run(
         cmake_args + args + [str(src)],
         builddir,
-        build_env,
+        {**build_env, "CMAKE_PREFIX_PATH": str(prefix)},
     )
     run(["cmake", "--build", ".", "--parallel", JOBS], builddir, build_env)
     run(["cmake", "--install", "."], builddir, build_env)

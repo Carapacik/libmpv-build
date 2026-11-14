@@ -8,3 +8,4 @@
 --enable-hwaccel=mpeg4_vaapi
 --enable-hwaccel=vp8_vaapi
 --enable-hwaccel=vp9_vaapi
+--enable-vulkan

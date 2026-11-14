@@ -4,5 +4,4 @@
 -Dopengl=enabled
 -Dgl-proc-addr=enabled
 -Dlcms=disabled
--Dvulkan=disabled
 -Ddefault_library=static

@@ -1,3 +1,4 @@
 # video outputs
 
 -Dgl-win32=enabled
+-Dvulkan=enabled
