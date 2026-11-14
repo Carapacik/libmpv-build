@@ -760,10 +760,8 @@ def build_dependency(base: Path, dependency: Dependency, build_target: BuildTarg
     flags = get_flags(base, dependency.name, build_target, build_variant)
     # Upstream opt-out: float formatting without std::to_chars (missing at runtime on old iOS).
     build_env = {**build_env, "CXXFLAGS": f"{build_env['CXXFLAGS']} -DHAS_STD_TO_CHARS_FP=0"}
-    # Only mpv symbols stay public; support libraries build hidden. libva
-    # hardcodes shared_library() (ignoring default_library=static), so
-    # hiding visibility there would hide its own API from consumers.
-    if dependency.name not in ("libva", "mpv"):
+    # Only mpv symbols stay public; support libraries build hidden.
+    if dependency.name != "mpv":
         build_env = {**build_env, "CFLAGS": build_env["CFLAGS"] + " -fvisibility=hidden", "CXXFLAGS": build_env["CXXFLAGS"] + " -fvisibility=hidden"}
     link = get_ldflags(base, dependency.name, build_target, build_variant)
     if link:
@@ -829,27 +827,7 @@ def build_ffmpeg(src: Path, build_target: BuildTarget, prefix: Path, args: list[
             build_env,
         )
     except SystemExit:
-        log = (src / "ffbuild" / "config.log").read_text().splitlines()
-        # The tail rarely contains the failing check; print each ERROR with
-        # the test that produced it.
-        for index, line in enumerate(log):
-            if line.startswith("ERROR:"):
-                print("\n".join(log[max(0, index - 25) : index + 5]), flush=True)
-        print("\n".join(log[-40:]), flush=True)
-        # Show the failing component's own check lines, wherever they are.
-        print("### failing check context ###", flush=True)
-        for index, line in enumerate(log):
-            if "vaapi" in line or "libva" in line or "va/va.h" in line or "vaInitialize" in line:
-                print("\n".join(log[max(0, index - 12) : index + 8]), flush=True)
-                print("---", flush=True)
-        # Show what pkg-config actually resolves to; a missing or broken
-        # .pc is the usual suspect behind "requested but not found".
-        print("### pkg-config files in prefix ###", flush=True)
-        for pc in sorted((prefix / "lib" / "pkgconfig").glob("*.pc")):
-            print(f"--- {pc.name} ---", flush=True)
-            for line in pc.read_text().splitlines():
-                if line.startswith(("Name:", "Version:", "Requires", "Libs", "Cflags")):
-                    print(line, flush=True)
+        print("\n".join((src / "ffbuild" / "config.log").read_text().splitlines()[-40:]), flush=True)
         raise
     if build_target.build_os == BuildOS.WINDOWS:
         # Configure leaves dlltool and windres untargeted; point them at the toolchain
