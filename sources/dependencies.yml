@@ -20,6 +20,8 @@
     - dav1d
     - libxml2
     - mbedtls
+    - moltenvk-ios
+    - moltenvk-macos
     - vulkan-loader
     - zlib
 - name: freetype
@@ -43,7 +45,7 @@
   sha256: cda24ec765e6d2845d106b7caa593f34127195a88524cf87821ff0088fb6edec
   tool: cmake
   dependencies: []
-  os: [linux, windows]
+  os: [ios, linux, macos, windows]
   variants: [video]
 - name: harfbuzz
   version: 15.1.0
@@ -87,6 +89,8 @@
   dependencies:
     - fast-float
     - glslang
+    - moltenvk-ios
+    - moltenvk-macos
     - vulkan-headers
     - vulkan-loader
 - name: libxml2
@@ -109,6 +113,22 @@
   tool: cmake
   dependencies: []
   os: [linux]
+- name: moltenvk-ios
+  version: 1.4.2
+  url: https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.2/MoltenVK-ios.tar
+  sha256: b5d947b1660e6e9fed40b9cd2387e160aaab9e80b775c0cef7e14059405178c1
+  tool: prebuilt
+  dependencies: []
+  os: [ios]
+  variants: [video]
+- name: moltenvk-macos
+  version: 1.4.2
+  url: https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.2/MoltenVK-macos.tar
+  sha256: f95765a6229cb7b915990a2890ce12ebe36a730b021545d3d52ae69ce4c4024e
+  tool: prebuilt
+  dependencies: []
+  os: [macos]
+  variants: [video]
 - name: mpv
   version: 0.42.0
   url: https://github.com/mpv-player/mpv/archive/refs/tags/v0.42.0.tar.gz
@@ -120,6 +140,8 @@
     - libdisplay-info
     - libdrm
     - libplacebo
+    - moltenvk-ios
+    - moltenvk-macos
     - vulkan-loader
     - zlib
 - name: vulkan-headers

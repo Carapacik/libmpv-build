@@ -99,6 +99,7 @@ class BuildTool(str, Enum):
     CMAKE = "cmake"
     CONFIGURE = "configure"
     MESON = "meson"
+    PREBUILT = "prebuilt"
 
     def __str__(self):
         return self.value
@@ -768,6 +769,8 @@ def build_dependency(base: Path, dependency: Dependency, build_target: BuildTarg
         build_env = {**build_env, "LDFLAGS": f"{build_env['LDFLAGS']} -L{prefix / 'lib'} {CXX_RUNTIME[build_target.build_os]} {' '.join(link)}".strip()}
     if dependency.name == "ffmpeg":
         build_ffmpeg(src, build_target, prefix, flags, build_env)
+    elif dependency.tool == BuildTool.PREBUILT:
+        build_prebuilt(base, dependency, src, build_target, prefix)
     elif dependency.tool == BuildTool.MESON:
         build_meson(src, prefix, cross_file, native_file, flags, build_env)
     elif dependency.tool == BuildTool.CMAKE:
@@ -842,6 +845,50 @@ def build_ffmpeg(src: Path, build_target: BuildTarget, prefix: Path, args: list[
         mak.write_text("\n".join(lines) + "\n")
     run(["make", f"-j{JOBS}"], src, build_env)
     run(["make", "install"], src, build_env)
+
+
+# MoltenVK static slice per Apple target; simulator slices ship no Vulkan
+MOLTENVK_SLICES = {
+    BuildTarget.MACOS_AMD64: "macos-arm64_x86_64",
+    BuildTarget.MACOS_ARM64: "macos-arm64_x86_64",
+    BuildTarget.IOS_ARM64: "ios-arm64",
+}
+
+
+# Installs a prebuilt upstream binary package (MoltenVK): no compilation,
+# just the static library for the target plus the vulkan pkg-config file
+# mpv and libplacebo look up. Headers come from the vendored Vulkan-Headers.
+def build_prebuilt(base: Path, dependency: Dependency, src: Path, build_target: BuildTarget, prefix: Path) -> None:
+    if dependency.name in ("moltenvk-ios", "moltenvk-macos"):
+        build_moltenvk(base, src, build_target, prefix)
+    else:
+        abort(f"no prebuilt installer: {dependency.name}")
+
+
+# Installs the MoltenVK static library matching the target
+def build_moltenvk(base: Path, src: Path, build_target: BuildTarget, prefix: Path) -> None:
+    if build_target not in MOLTENVK_SLICES:
+        # Simulator slices have no MoltenVK slice and no vulkan flags.
+        print(f"skipping moltenvk for {build_target}", flush=True)
+        return
+    original = src / "MoltenVK" / "static" / "MoltenVK.xcframework" / MOLTENVK_SLICES[build_target] / "libMoltenVK.a"
+    (prefix / "lib").mkdir(parents=True, exist_ok=True)
+    shutil.copy(original, prefix / "lib" / "libMoltenVK.a")
+    headers = next(entry.version for entry in get_dependencies(base) if entry.name == "vulkan-headers")
+    (prefix / "lib" / "pkgconfig").mkdir(parents=True, exist_ok=True)
+    (prefix / "lib" / "pkgconfig" / "vulkan.pc").write_text(
+        f"""\
+prefix={prefix}
+libdir=${{prefix}}/lib
+includedir=${{prefix}}/include
+
+Name: vulkan
+Description: Vulkan headers with the MoltenVK implementation
+Version: {headers}
+Libs: -L${{libdir}} -lMoltenVK
+Cflags: -I${{includedir}}
+"""
+    )
 
 
 # Builds and installs with meson
