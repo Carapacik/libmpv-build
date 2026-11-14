@@ -786,13 +786,25 @@ def fetch_dependency(base: Path, name: str, url: str, sha: str) -> Path:
     archive = base / DEPS_DIR / url.rsplit("/", 1)[-1]
     download(url, sha, archive)
     unarchive(archive, dest)
+    flatten_single_top(dest)
+    return dest
+
+
+# Collapses a single top-level directory, laying its leaves in dest
+def flatten_single_top(dest: Path) -> None:
     kids = list(dest.iterdir())
     if len(kids) == 1 and kids[0].is_dir():
         inner = kids[0]
+        # Stage through a sibling directory: moving the inner tree's leaves
+        # straight into dest breaks when one shares the inner name itself
+        # (e.g. MoltenVK/MoltenVK), colliding with the directory moved from.
+        staging = dest.parent / f"{dest.name}.flattened"
+        shutil.rmtree(staging, ignore_errors=True)
+        staging.mkdir()
         for leaf in inner.iterdir():
-            shutil.move(str(leaf), str(dest))
-        inner.rmdir()
-    return dest
+            shutil.move(str(leaf), str(staging))
+        shutil.rmtree(dest)
+        staging.rename(dest)
 
 
 # Cross compiles and installs with FFmpeg configure
@@ -871,7 +883,9 @@ def build_moltenvk(base: Path, src: Path, build_target: BuildTarget, prefix: Pat
         # Simulator slices have no MoltenVK slice and no vulkan flags.
         print(f"skipping moltenvk for {build_target}", flush=True)
         return
-    original = src / "MoltenVK" / "static" / "MoltenVK.xcframework" / MOLTENVK_SLICES[build_target] / "libMoltenVK.a"
+    # The tarball nests MoltenVK/MoltenVK, which the generic flattener leaves
+    # in place; locate the slice by name instead of assuming a layout.
+    original = next(leaf for leaf in src.rglob("libMoltenVK.a") if leaf.parent.name == MOLTENVK_SLICES[build_target])
     (prefix / "lib").mkdir(parents=True, exist_ok=True)
     shutil.copy(original, prefix / "lib" / "libMoltenVK.a")
     headers = next(entry.version for entry in get_dependencies(base) if entry.name == "vulkan-headers")
