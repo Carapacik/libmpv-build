@@ -787,6 +787,11 @@ def build_ffmpeg(src: Path, build_target: BuildTarget, prefix: Path, args: list[
     for query in (["--cflags", "libva"], ["--libs", "libva"], ["--modversion", "libva"]):
         probed = subprocess.run(["pkg-config"] + query, capture_output=True, text=True, env={**os.environ, **build_env})
         print(f"pkg-config {' '.join(query)} -> rc={probed.returncode} out=[{probed.stdout.strip()}] err=[{probed.stderr.strip()}]", flush=True)
+    for probe in ["libva.pc", "libva-drm.pc", "libva-x11.pc", "libva-wayland.pc", "libva-glx.pc"]:
+        probe_path = prefix / "lib" / "pkgconfig" / probe
+        print(f"--- {probe}: exists={probe_path.is_file()} ---", flush=True)
+        if probe_path.is_file():
+            print(probe_path.read_text(), flush=True)
     if build_target.build_os == BuildOS.IOS or build_target.build_os == BuildOS.MACOS:
         # Builds host tools against the macOS SDK; the target SDKROOT makes them un-runnable
         sysroot = darwin_sdk_path("macosx")
