@@ -740,8 +740,10 @@ def build_dependency(base: Path, dependency: Dependency, build_target: BuildTarg
     flags = get_flags(base, dependency.name, build_target, build_variant)
     # Upstream opt-out: float formatting without std::to_chars (missing at runtime on old iOS).
     build_env = {**build_env, "CXXFLAGS": f"{build_env['CXXFLAGS']} -DHAS_STD_TO_CHARS_FP=0"}
-    # Only mpv symbols stay public; support libraries build hidden
-    if dependency.name != "mpv":
+    # Only mpv symbols stay public; support libraries build hidden. libva
+    # hardcodes shared_library() (ignoring default_library=static), so
+    # hiding visibility there would hide its own API from consumers.
+    if dependency.name not in ("libva", "mpv"):
         build_env = {**build_env, "CFLAGS": build_env["CFLAGS"] + " -fvisibility=hidden", "CXXFLAGS": build_env["CXXFLAGS"] + " -fvisibility=hidden"}
     link = get_ldflags(base, dependency.name, build_target, build_variant)
     if link:
@@ -774,24 +776,6 @@ def fetch_dependency(base: Path, name: str, url: str, sha: str) -> Path:
 
 # Cross compiles and installs with FFmpeg configure
 def build_ffmpeg(src: Path, build_target: BuildTarget, prefix: Path, args: list[str], build_env: BuildEnv) -> None:
-    # Temporary: show which .pc files pkg-config can see; helps diagnose
-    # "requested but not found" configure failures.
-    probe = subprocess.run(
-        ["pkg-config", "--list-all"],
-        capture_output=True,
-        text=True,
-        env={**os.environ, **build_env},
-    )
-    print("\n".join(sorted(line for line in probe.stdout.splitlines() if "va" in line.lower() or "dav1d" in line or "ass" in line or "placebo" in line or "fribidi" in line or "freetype" in line or "harfbuzz" in line)), flush=True)
-    print("pkg-config libva: " + subprocess.run(["pkg-config", "--print-errors", "--exists", "libva >= 0.35.0"], capture_output=True, text=True, env={**os.environ, **build_env}).stderr.strip(), flush=True)
-    for query in (["--cflags", "libva"], ["--libs", "libva"], ["--modversion", "libva"]):
-        probed = subprocess.run(["pkg-config"] + query, capture_output=True, text=True, env={**os.environ, **build_env})
-        print(f"pkg-config {' '.join(query)} -> rc={probed.returncode} out=[{probed.stdout.strip()}] err=[{probed.stderr.strip()}]", flush=True)
-    for probe in ["libva.pc", "libva-drm.pc", "libva-x11.pc", "libva-wayland.pc", "libva-glx.pc"]:
-        probe_path = prefix / "lib" / "pkgconfig" / probe
-        print(f"--- {probe}: exists={probe_path.is_file()} ---", flush=True)
-        if probe_path.is_file():
-            print(probe_path.read_text(), flush=True)
     if build_target.build_os == BuildOS.IOS or build_target.build_os == BuildOS.MACOS:
         # Builds host tools against the macOS SDK; the target SDKROOT makes them un-runnable
         sysroot = darwin_sdk_path("macosx")
