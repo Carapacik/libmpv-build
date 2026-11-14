@@ -10,6 +10,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import tempfile
 import time
 import urllib.request
 import zipfile
@@ -252,9 +253,12 @@ def main() -> int:
     prefix = base / DEPS_DIR / f"{PREFIX}{build_target}"
     native_file = None
     if build_target.build_os == BuildOS.IOS or build_target.build_os == BuildOS.MACOS:
-        (base / DEPS_DIR).mkdir(parents=True, exist_ok=True)
-        native_file = base / DEPS_DIR / f"native-{build_target}.txt"
-        native_file.write_text(DARWIN_NATIVE_FILE)
+        # Meson only accepts a file path, so spill the generated content
+        # to a temp file instead of the repo tree.
+        handle, path = tempfile.mkstemp(prefix=f"native-{build_target}-", suffix=".txt")
+        with os.fdopen(handle, "w") as file:
+            file.write(DARWIN_NATIVE_FILE)
+        native_file = Path(path)
     shutil.rmtree(prefix, ignore_errors=True)
     build_env = get_target_env(base, build_target, prefix)
     for dependency in dependencies:
