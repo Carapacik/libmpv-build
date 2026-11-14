@@ -784,6 +784,9 @@ def build_ffmpeg(src: Path, build_target: BuildTarget, prefix: Path, args: list[
     )
     print("\n".join(sorted(line for line in probe.stdout.splitlines() if "va" in line.lower() or "dav1d" in line or "ass" in line or "placebo" in line or "fribidi" in line or "freetype" in line or "harfbuzz" in line)), flush=True)
     print("pkg-config libva: " + subprocess.run(["pkg-config", "--print-errors", "--exists", "libva >= 0.35.0"], capture_output=True, text=True, env={**os.environ, **build_env}).stderr.strip(), flush=True)
+    for query in (["--cflags", "libva"], ["--libs", "libva"], ["--modversion", "libva"]):
+        probed = subprocess.run(["pkg-config"] + query, capture_output=True, text=True, env={**os.environ, **build_env})
+        print(f"pkg-config {' '.join(query)} -> rc={probed.returncode} out=[{probed.stdout.strip()}] err=[{probed.stderr.strip()}]", flush=True)
     if build_target.build_os == BuildOS.IOS or build_target.build_os == BuildOS.MACOS:
         # Builds host tools against the macOS SDK; the target SDKROOT makes them un-runnable
         sysroot = darwin_sdk_path("macosx")
@@ -824,6 +827,12 @@ def build_ffmpeg(src: Path, build_target: BuildTarget, prefix: Path, args: list[
             if line.startswith("ERROR:"):
                 print("\n".join(log[max(0, index - 25) : index + 5]), flush=True)
         print("\n".join(log[-40:]), flush=True)
+        # Show the failing component's own check lines, wherever they are.
+        print("### failing check context ###", flush=True)
+        for index, line in enumerate(log):
+            if "vaapi" in line or "libva" in line or "va/va.h" in line or "vaInitialize" in line:
+                print("\n".join(log[max(0, index - 12) : index + 8]), flush=True)
+                print("---", flush=True)
         # Show what pkg-config actually resolves to; a missing or broken
         # .pc is the usual suspect behind "requested but not found".
         print("### pkg-config files in prefix ###", flush=True)
