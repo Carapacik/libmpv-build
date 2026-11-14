@@ -54,6 +54,14 @@
     - fribidi
     - harfbuzz
   variants: [video]
+- name: libdisplay-info
+  version: 0.4.0
+  url: https://gitlab.freedesktop.org/emersion/libdisplay-info/-/archive/0.4.0/libdisplay-info-0.4.0.tar.gz
+  sha256: 787b58aec473830b0030251ba2b880560b4b3853dc5d6961a6e9701abae29b55
+  tool: meson
+  dependencies: []
+  os: [linux]
+  variants: [video]
 - name: libplacebo
   version: 7.387.0
   url: https://github.com/haasn/libplacebo/archive/refs/tags/v7.387.0.tar.gz
