@@ -767,6 +767,10 @@ def build_dependency(base: Path, dependency: Dependency, build_target: BuildTarg
     link = get_ldflags(base, dependency.name, build_target, build_variant)
     if link:
         build_env = {**build_env, "LDFLAGS": f"{build_env['LDFLAGS']} -L{prefix / 'lib'} {CXX_RUNTIME[build_target.build_os]} {' '.join(link)}".strip()}
+    elif build_variant == BuildVariant.VIDEO:
+        # Meson link-tests (e.g. libplacebo's glslang lookup) search the link
+        # path, not the pkg-config path; keep it hermetic for video builds.
+        build_env = {**build_env, "LDFLAGS": f"{build_env['LDFLAGS']} -L{prefix / 'lib'}"}
     if dependency.name == "ffmpeg":
         build_ffmpeg(src, build_target, prefix, flags, build_env)
     elif dependency.name == "libplacebo" and build_variant == BuildVariant.VIDEO:
