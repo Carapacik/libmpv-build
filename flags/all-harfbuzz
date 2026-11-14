@@ -6,6 +6,7 @@
 -Dfreetype=enabled
 -Dglib=disabled
 -Dgobject=disabled
+-Dgpu=disabled
 -Dicu=disabled
 -Dintrospection=disabled
 -Dtests=disabled

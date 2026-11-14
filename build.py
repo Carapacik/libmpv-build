@@ -774,6 +774,16 @@ def fetch_dependency(base: Path, name: str, url: str, sha: str) -> Path:
 
 # Cross compiles and installs with FFmpeg configure
 def build_ffmpeg(src: Path, build_target: BuildTarget, prefix: Path, args: list[str], build_env: BuildEnv) -> None:
+    # Temporary: show which .pc files pkg-config can see; helps diagnose
+    # "requested but not found" configure failures.
+    probe = subprocess.run(
+        ["pkg-config", "--list-all"],
+        capture_output=True,
+        text=True,
+        env={**os.environ, **build_env},
+    )
+    print("\n".join(sorted(line for line in probe.stdout.splitlines() if "va" in line.lower() or "dav1d" in line or "ass" in line or "placebo" in line or "fribidi" in line or "freetype" in line or "harfbuzz" in line)), flush=True)
+    print("pkg-config libva: " + subprocess.run(["pkg-config", "--print-errors", "--exists", "libva >= 0.35.0"], capture_output=True, text=True, env={**os.environ, **build_env}).stderr.strip(), flush=True)
     if build_target.build_os == BuildOS.IOS or build_target.build_os == BuildOS.MACOS:
         # Builds host tools against the macOS SDK; the target SDKROOT makes them un-runnable
         sysroot = darwin_sdk_path("macosx")
