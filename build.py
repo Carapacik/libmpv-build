@@ -203,7 +203,6 @@ DEPENDENCIES_FILE = "sources/dependencies.yml"
 FLAGS_DIR = "flags"
 LDFLAGS_DIR = "ldflags"
 CROSS_DIR = "cross"
-NATIVE_DIR = "native"
 PATCHES_DIR = "patches"
 DEPS_DIR = "deps"
 BUILD_DIR = "build"
@@ -214,6 +213,19 @@ SYMBOLS_DIR = "symbols"
 # File naming fragments
 ALL = "all"
 PREFIX = "prefix-"
+
+# Meson native file for darwin cross builds, generated on the fly instead of
+# checked in: build-machine tools must not inherit the target SDK from the
+# environment, or nothing built for the build machine can run.
+DARWIN_NATIVE_FILE = """\
+# macOS build-machine tools for cross builds. The build env targets the
+# OS SDK, so scrub it here for the helper tools that must run on macOS.
+
+[binaries]
+c = ['env', '-u', 'SDKROOT', '-u', 'CFLAGS', '-u', 'LDFLAGS', 'xcrun', '-sdk', 'macosx', 'clang']
+cpp = ['env', '-u', 'SDKROOT', '-u', 'CXXFLAGS', '-u', 'LDFLAGS', 'xcrun', '-sdk', 'macosx', 'clang++']
+ar = 'ar'
+"""
 
 # Host runtime
 JOBS = str(os.cpu_count() or 4)
@@ -237,8 +249,12 @@ def main() -> int:
     check_host_compat(build_target)
     dependencies = get_dependencies(base, build_variant)
     cross_file = base / CROSS_DIR / f"{build_target}.txt"
-    native_file = base / NATIVE_DIR / f"{build_target}.txt"
     prefix = base / DEPS_DIR / f"{PREFIX}{build_target}"
+    native_file = None
+    if build_target.build_os == BuildOS.IOS or build_target.build_os == BuildOS.MACOS:
+        (base / DEPS_DIR).mkdir(parents=True, exist_ok=True)
+        native_file = base / DEPS_DIR / f"native-{build_target}.txt"
+        native_file.write_text(DARWIN_NATIVE_FILE)
     shutil.rmtree(prefix, ignore_errors=True)
     build_env = get_target_env(base, build_target, prefix)
     for dependency in dependencies:
@@ -732,7 +748,7 @@ def get_ldflags(base: Path, name: str, build_target: BuildTarget, build_variant:
 
 
 # Fetches, patches, and builds one dependency
-def build_dependency(base: Path, dependency: Dependency, build_target: BuildTarget, build_variant: BuildVariant, cross_file: Path, native_file: Path, prefix: Path, build_env: BuildEnv) -> None:
+def build_dependency(base: Path, dependency: Dependency, build_target: BuildTarget, build_variant: BuildVariant, cross_file: Path, native_file: Optional[Path], prefix: Path, build_env: BuildEnv) -> None:
     src = fetch_dependency(base, dependency.name, dependency.url, dependency.sha256)
     for path in get_patch_files(base, dependency.name, build_target, build_variant):
         print(f"applying {path}", flush=True)
@@ -847,12 +863,12 @@ def build_ffmpeg(src: Path, build_target: BuildTarget, prefix: Path, args: list[
 
 
 # Builds and installs with meson
-def build_meson(src: Path, prefix: Path, cross_file: Path, native_file: Path, args: list[str], build_env: BuildEnv) -> None:
+def build_meson(src: Path, prefix: Path, cross_file: Path, native_file: Optional[Path], args: list[str], build_env: BuildEnv) -> None:
     builddir = src / BUILD_DIR
     shutil.rmtree(builddir, ignore_errors=True)
     # A native file gives cross builds a working build-machine compiler for
     # helper tools (e.g. fribidi codegen); targets without one are unaffected.
-    native_args = [f"--native-file={native_file}"] if native_file.is_file() else []
+    native_args = [f"--native-file={native_file}"] if native_file is not None else []
     run(
         ["meson", "setup", str(builddir), str(src), f"--prefix={prefix}", f"--cross-file={cross_file}"] + native_args + args,
         src,
