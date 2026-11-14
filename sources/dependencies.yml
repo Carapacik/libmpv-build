@@ -130,7 +130,7 @@
   dependencies: []
 - name: vulkan-loader
   version: 1.4.363.0
-  url: https://github.com/KhronosGroup/Vulkan-Loader/archive/refs/tags/vulkan-sdk-1.4.363.0.tar.gz
+  url: https://codeload.github.com/KhronosGroup/Vulkan-Loader/tar.gz/vulkan-sdk-1.4.363.0
   sha256: 941eff558fc74f248745fb7df367640cf89a8457f216dae498a74ae3eb6a8457f
   tool: cmake
   dependencies:
