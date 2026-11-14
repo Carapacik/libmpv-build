@@ -814,6 +814,14 @@ def build_ffmpeg(src: Path, build_target: BuildTarget, prefix: Path, args: list[
             if line.startswith("ERROR:"):
                 print("\n".join(log[max(0, index - 25) : index + 5]), flush=True)
         print("\n".join(log[-40:]), flush=True)
+        # Show what pkg-config actually resolves to; a missing or broken
+        # .pc is the usual suspect behind "requested but not found".
+        print("### pkg-config files in prefix ###", flush=True)
+        for pc in sorted((prefix / "lib" / "pkgconfig").glob("*.pc")):
+            print(f"--- {pc.name} ---", flush=True)
+            for line in pc.read_text().splitlines():
+                if line.startswith(("Name:", "Version:", "Requires", "Libs", "Cflags")):
+                    print(line, flush=True)
         raise
     if build_target.build_os == BuildOS.WINDOWS:
         # Configure leaves dlltool and windres untargeted; point them at the toolchain
