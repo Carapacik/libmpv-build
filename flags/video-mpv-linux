@@ -6,3 +6,4 @@
 
 -Ddrm=enabled
 -Dvaapi=enabled
+-Dvaapi-drm=enabled
