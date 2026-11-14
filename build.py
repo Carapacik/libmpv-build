@@ -807,7 +807,13 @@ def build_ffmpeg(src: Path, build_target: BuildTarget, prefix: Path, args: list[
             build_env,
         )
     except SystemExit:
-        print("\n".join((src / "ffbuild" / "config.log").read_text().splitlines()[-40:]), flush=True)
+        log = (src / "ffbuild" / "config.log").read_text().splitlines()
+        # The tail rarely contains the failing check; print each ERROR with
+        # the test that produced it.
+        for index, line in enumerate(log):
+            if line.startswith("ERROR:"):
+                print("\n".join(log[max(0, index - 25) : index + 5]), flush=True)
+        print("\n".join(log[-40:]), flush=True)
         raise
     if build_target.build_os == BuildOS.WINDOWS:
         # Configure leaves dlltool and windres untargeted; point them at the toolchain
