@@ -7,6 +7,7 @@ import 'package:integration_test/integration_test.dart';
 import 'package:mpv_libs/mpv_libs.dart';
 
 const kExpectedDurationSec = 15;
+const kAudioDeviceList = 'audio-device-list';
 
 // ffprobe format duration of the clip: 15.046531 s.
 const kTestUrl = 'https://user-images.githubusercontent.com/28951144/229373709-603a7a89-2105-4e1b-a5a5-a6c3567c9a59.mp4';
@@ -26,6 +27,7 @@ void main() {
     expect(mpvObserveProperty(handle, 'duration', kFormatDouble), 0);
     expect(mpvObserveProperty(handle, 'time-pos', kFormatDouble), 0);
     expect(mpvObserveProperty(handle, 'pause', kFormatFlag), 0);
+    expect(mpvObserveProperty(handle, kAudioDeviceList, kFormatNode), 0);
     expect(mpvCommand(handle, 'loadfile $kTestUrl replace'), 0);
 
     // Fires once when playback starts.
@@ -50,6 +52,12 @@ void main() {
     final onPauseFalse = expectAsync1((bool isPaused) {
       expect(isPaused, isFalse);
     }, count: 2);
+    // Fires once with the initial audio-device-list value. Building the list
+    // enumerates system audio devices (ALSA hotplug on Linux); freeing those
+    // system-allocated strings with the wrong allocator crashes the process.
+    final onAudioDeviceList = expectAsync1((String name) {
+      expect(name, kAudioDeviceList);
+    }, count: 1);
 
     final timer = Timer.periodic(Duration.zero, (_) {
       final eventRef = mpvWaitEvent(handle, 0);
@@ -72,6 +80,9 @@ void main() {
             print('mpv: time-pos=$secs');
             onPosition(secs);
           }
+        } else if (prop.format == kFormatNode && name == kAudioDeviceList) {
+          print('mpv: audio-device-list received');
+          onAudioDeviceList(name);
         } else if (prop.format == kFormatFlag && name == 'pause') {
           final isPaused = prop.data.cast<Int32>().value != 0;
           print('mpv: pause=$isPaused');

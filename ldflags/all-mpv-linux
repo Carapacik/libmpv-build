@@ -9,3 +9,6 @@
 # keep bundled malloc private to libmpv: exported malloc/free interpose the
 # host process allocator (e.g. Dart FFI) and crash on mixed-allocator frees
 -Wl,--exclude-libs,ALL
+
+# dlsym for resolving the system free() (ALSA hint strings)
+-ldl
