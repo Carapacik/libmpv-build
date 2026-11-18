@@ -1,0 +1,49 @@
+--- a/audio/out/ao_alsa.c
++++ b/audio/out/ao_alsa.c
+@@ -40,6 +40,7 @@
+ #include "common/msg.h"
+ #include "osdep/endian.h"
+ #include "osdep/timer.h"
++#include <dlfcn.h>
+ 
+ #include <alsa/asoundlib.h>
+ 
+@@ -1128,6 +1129,25 @@
+     if (name && strcmp(name, "default") == 0)
+         return true;
+     return false;
++}
++
++// ALSA allocates hint strings with the system allocator, while this library
++// may be built with a bundled allocator (mimalloc) that also provides free().
++// Freeing ALSA-allocated strings with the bundled free() corrupts the heap,
++// so resolve the real libc free() explicitly.
++static void alsa_hint_free(void *ptr)
++{
++    // RTLD_DEFAULT resolves in load order starting from the main program.
++    // This library is loaded privately (RTLD_LOCAL), so its own bundled
++    // free() is never in the global scope and this always finds libc's.
++    void (*system_free)(void *) = dlsym(RTLD_DEFAULT, "free");
++    if (system_free) {
++        system_free(ptr);
++    } else {
++        // Should never happen (libc is always loaded); fall back instead
++        // of leaking.
++        free(ptr);
++    }
+ }
+ 
+ static void list_devs(struct ao *ao, struct ao_device_list *list)
+@@ -1151,9 +1171,9 @@
+             }
+             ao_device_list_add(list, ao, &(struct ao_device_desc){name, desc2});
+         }
+-        free(name);
+-        free(desc);
+-        free(io);
++        alsa_hint_free(name);
++        alsa_hint_free(desc);
++        alsa_hint_free(io);
+     }
+ 
+     snd_device_name_free_hint(hints);

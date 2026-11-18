@@ -7,6 +7,7 @@ const kEventPlaybackRestart = 21;
 const kEventPropertyChange = 22;
 const kFormatFlag = 3;
 const kFormatDouble = 5;
+const kFormatNode = 6;
 
 typedef _MpvCommandC = Int32 Function(Pointer<Void>, Pointer<Utf8>);
 typedef _MpvCommandFn = int Function(Pointer<Void>, Pointer<Utf8>);
