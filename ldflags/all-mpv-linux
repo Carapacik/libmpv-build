@@ -5,3 +5,7 @@
 # bind bundled malloc to libmpv itself under dlopen
 
 -Wl,-Bsymbolic-functions
+
+# keep bundled malloc private to libmpv: exported malloc/free interpose the
+# host process allocator (e.g. Dart FFI) and crash on mixed-allocator frees
+-Wl,--exclude-libs,ALL
