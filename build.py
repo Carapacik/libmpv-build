@@ -100,6 +100,7 @@ class BuildTool(str, Enum):
     CONFIGURE = "configure"
     MESON = "meson"
     PREBUILT = "prebuilt"
+    SOURCE = "source"
 
     def __str__(self):
         return self.value
@@ -758,6 +759,8 @@ def build_dependency(base: Path, dependency: Dependency, build_target: BuildTarg
     for path in get_patch_files(base, dependency.name, build_target, build_variant):
         print(f"applying {path}", flush=True)
         run(["patch", "-p1", "-i", str(path)], src)
+    if dependency.tool == BuildTool.SOURCE:
+        return
     flags = get_flags(base, dependency.name, build_target, build_variant)
     # Upstream opt-out: float formatting without std::to_chars (missing at runtime on old iOS).
     build_env = {**build_env, "CXXFLAGS": f"{build_env['CXXFLAGS']} -DHAS_STD_TO_CHARS_FP=0"}
@@ -777,6 +780,13 @@ def build_dependency(base: Path, dependency: Dependency, build_target: BuildTarg
         # Meson finds libraries only in its search dirs, not the prefix link
         # path; point its glslang lookup (static libs, no pkg-config) there.
         build_meson(src, prefix, cross_file, native_file, [*flags, f"-Dvulkan-sdk={prefix}"], build_env)
+    elif dependency.name == "shaderc":
+        # Build the combined archive so loading libmpv requires no shader compiler DLL.
+        flags.append(f"-DSHADERC_THIRD_PARTY_ROOT_DIR={src.parent}")
+        build_cmake(src, build_target, prefix, flags, build_env, ["shaderc_combined", "shaderc_combined-pkg-config"])
+        shutil.copytree(src / "libshaderc" / "include", prefix / "include", dirs_exist_ok=True)
+        shutil.copy(src / BUILD_DIR / "libshaderc" / "libshaderc_combined.a", prefix / "lib")
+        shutil.copy(src / BUILD_DIR / "shaderc_combined.pc", prefix / "lib" / "pkgconfig" / "shaderc.pc")
     elif dependency.tool == BuildTool.PREBUILT:
         build_prebuilt(base, dependency, src, build_target, prefix)
     elif dependency.tool == BuildTool.MESON:
@@ -930,7 +940,7 @@ def build_meson(src: Path, prefix: Path, cross_file: Path, native_file: Optional
 
 
 # Builds and installs with cmake
-def build_cmake(src: Path, build_target: BuildTarget, prefix: Path, args: list[str], build_env: BuildEnv) -> None:
+def build_cmake(src: Path, build_target: BuildTarget, prefix: Path, args: list[str], build_env: BuildEnv, targets: Optional[list[str]] = None) -> None:
     builddir = src / BUILD_DIR
     shutil.rmtree(builddir, ignore_errors=True)
     builddir.mkdir()
@@ -955,6 +965,9 @@ def build_cmake(src: Path, build_target: BuildTarget, prefix: Path, args: list[s
         builddir,
         {**build_env, "CMAKE_PREFIX_PATH": str(prefix)},
     )
+    if targets:
+        run(["cmake", "--build", ".", "--parallel", JOBS, "--target", *targets], builddir, build_env)
+        return
     run(["cmake", "--build", ".", "--parallel", JOBS], builddir, build_env)
     run(["cmake", "--install", "."], builddir, build_env)
 

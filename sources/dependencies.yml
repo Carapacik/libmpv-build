@@ -91,6 +91,8 @@
     - glslang
     - moltenvk-ios
     - moltenvk-macos
+    - shaderc
+    - spirv-cross
     - vulkan-headers
     - vulkan-loader
 - name: libxml2
@@ -144,6 +146,38 @@
     - moltenvk-macos
     - vulkan-loader
     - zlib
+- name: shaderc
+  version: "2026.4"
+  url: https://github.com/google/shaderc/archive/refs/tags/v2026.4.tar.gz
+  sha256: f06ce5bcca94e5df7f34e115743597d0ad2e13c5fe9213c67dc8c76031241947
+  tool: cmake
+  dependencies: [glslang, spirv-headers, spirv-tools]
+  os: [windows]
+  variants: [video]
+- name: spirv-cross
+  version: 1.4.363.0
+  url: https://github.com/KhronosGroup/SPIRV-Cross/archive/refs/tags/vulkan-sdk-1.4.363.0.tar.gz
+  sha256: f708982e88b763ef5b0394ed468fc2c3628f68cdab89f2e7a946cd628c04e721
+  tool: cmake
+  dependencies: []
+  os: [windows]
+  variants: [video]
+- name: spirv-headers
+  version: 04fd3caa1e8267e4d95c806cad901181728e1006
+  url: https://github.com/KhronosGroup/SPIRV-Headers/archive/04fd3caa1e8267e4d95c806cad901181728e1006.tar.gz
+  sha256: 392f4801409aad9c4f1b77745f179952fd6264e4c8bd0fc1bc45dfa6807bf6d0
+  tool: source
+  dependencies: []
+  os: [windows]
+  variants: [video]
+- name: spirv-tools
+  version: 1.4.363.0
+  url: https://github.com/KhronosGroup/SPIRV-Tools/archive/refs/tags/vulkan-sdk-1.4.363.0.tar.gz
+  sha256: e6c83a215538fbfd265ccf398d3877985055df1273dbed73912bd05307664688
+  tool: source
+  dependencies: []
+  os: [windows]
+  variants: [video]
 - name: vulkan-headers
   version: 1.4.368
   url: https://github.com/KhronosGroup/Vulkan-Headers/archive/refs/tags/v1.4.368.tar.gz
@@ -157,7 +191,7 @@
   tool: cmake
   dependencies:
     - vulkan-headers
-  os: [linux, windows]
+  os: [linux]
   variants: [video]
 - name: zlib
   version: 1.3.1
