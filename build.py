@@ -328,12 +328,13 @@ def get_dependencies(base: Path, build_variant: Optional[BuildVariant] = None) -
 
 # Downloads and extracts the Android NDK once; returns its root
 def fetch_android_ndk(base: Path) -> Path:
-    root = base / TOOLCHAIN_DIR / "android"
+    release = "r29"
+    root = base / TOOLCHAIN_DIR / f"android-ndk-{release}"
     if (root / "toolchains").is_dir():
         return root
     root.mkdir(parents=True, exist_ok=True)
-    archive = base / TOOLCHAIN_DIR / "android-ndk-r27-linux.zip"
-    download("https://dl.google.com/android/repository/android-ndk-r27-linux.zip", "2f17eb8bcbfdc40201c0b36e9a70826fcd2524ab7a2a235e2c71186c302da1dc", archive)
+    archive = base / TOOLCHAIN_DIR / f"android-ndk-{release}-linux.zip"
+    download(f"https://dl.google.com/android/repository/{archive.name}", "4abbbcdc842f3d4879206e9695d52709603e52dd68d3c1fff04b3b5e7a308ecf", archive)
     unarchive(archive, root)
     kids = [kid for kid in root.iterdir() if not kid.name.startswith(".")]
     if len(kids) == 1 and kids[0].is_dir():
@@ -347,14 +348,15 @@ def fetch_android_ndk(base: Path) -> Path:
 
 # Downloads and extracts llvm-mingw once; returns its root
 def fetch_llvm_mingw(base: Path) -> Path:
-    root = base / TOOLCHAIN_DIR / "windows"
+    release = "20261117"
+    root = base / TOOLCHAIN_DIR / f"llvm-mingw-{release}"
     if (root / "bin").is_dir():
         return root
     root.mkdir(parents=True, exist_ok=True)
-    archive = base / TOOLCHAIN_DIR / "llvm-mingw-20251118-ucrt-ubuntu-22.04-x86_64.tar.xz"
+    archive = base / TOOLCHAIN_DIR / f"llvm-mingw-{release}-ucrt-ubuntu-22.04-x86_64.tar.xz"
     download(
-        "https://github.com/mstorsjo/llvm-mingw/releases/download/20251118/llvm-mingw-20251118-ucrt-ubuntu-22.04-x86_64.tar.xz",
-        "53a0c22caa46b501e1c089e1c31b24a7c0e0d5a86f8ad12b131aafd4cee01ef4",
+        f"https://github.com/mstorsjo/llvm-mingw/releases/download/{release}/{archive.name}",
+        "e7a15a49a2ea95e9f3d8a9d0cfabe5052a4b10fb4777cc54de5a8c27b64bb701",
         archive,
     )
     unarchive(archive, root)
